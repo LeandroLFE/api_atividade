@@ -1,11 +1,31 @@
 from flask import Flask, request
 from flask_restful import Resource, Api
-from models import Pessoas, Atividades, status_aceitos
+from models import Pessoas, Atividades, Usuarios, status_aceitos
+from flask_httpauth import HTTPBasicAuth
 
+auth = HTTPBasicAuth()
 app = Flask(__name__)
 api = Api(app)
 
+# USUARIOS = {
+#     'rafael':'123',
+#     'leandro':'321'
+# }
+#
+# @auth.verify_password
+# def verificacao(login, senha):
+#     if not(login, senha):
+#         return False
+#     return Usuarios.get(login) == senha
+
+@auth.verify_password
+def verificacao(login, senha):
+    if not(login, senha):
+        return False
+    return Usuarios.query.filter_by(login=login, senha=senha).first()
+
 class Pessoa(Resource):
+    @auth.login_required
     def get(self, nome):
         try:
             pessoa = Pessoas.query.filter_by(nome=nome).first()
@@ -23,6 +43,7 @@ class Pessoa(Resource):
             }
             return response
 
+    @auth.login_required
     def put(self, nome):
         pessoa = Pessoas.query.filter_by(nome=nome).first()
         dados = request.json
@@ -40,6 +61,7 @@ class Pessoa(Resource):
         }
         return response
 
+    @auth.login_required
     def delete(self, nome):
         try:
             pessoa = Pessoas.query.filter_by(nome=nome).first()
@@ -57,6 +79,7 @@ class Pessoa(Resource):
             return response
 
 class ListaPessoas(Resource):
+    @auth.login_required
     def get(self):
         pessoas = Pessoas.query.all()
         response = [{'id':i.id, 'nome':i.nome, 'idade':i.idade} for i in pessoas]
@@ -129,6 +152,7 @@ class ListaAtividade(Resource):
             return response
 
 class ListaAtividadesPorResponsavel(Resource):
+    @auth.login_required
     def get(self, resp):
         try:
             responsavel = Pessoas.query.filter_by(nome=resp).first()
@@ -146,6 +170,7 @@ class ListaAtividadesPorResponsavel(Resource):
             return response
 
 class AtividadePorID(Resource):
+    @auth.login_required
     def get(self, id):
         try:
             atividade = Atividades.query.filter_by(id=id).first()
@@ -164,6 +189,7 @@ class AtividadePorID(Resource):
             }
             return response
 
+    @auth.login_required
     def put(self, id):
         try:
             atividade = Atividades.query.filter_by(id=id).first()
